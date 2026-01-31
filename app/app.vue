@@ -1,6 +1,8 @@
 <template>
-  <div>
-    <NuxtRouteAnnouncer />
-    <NuxtWelcome />
-  </div>
+  <UApp>
+    <UHeader title="Coach" to="/" />
+    <UContainer>
+      <NuxtPage />
+    </UContainer>
+  </UApp>
 </template>
