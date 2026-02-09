@@ -26,5 +26,10 @@ export const macrocycleSchema = z.object({
     importance: z.number().describe('The importance rating of addressing this objective'),
     value: z.string().describe('The objective'),
   }).array().describe('Based on the goal, all of the actionable objectives to achieve the goal'),
+  supplements: z.string().nullable().describe('The supplements I am using during the plan and how long for if any'),
+  weaknesses: z.object({
+    area: z.string().describe('area of weakness'),
+    priority: z.string().describe('the priority of addressing this weakness'),
+  }).array().describe('all of the areas of muscle weakness/imbalance'),
   mesocycle: mesocycleSchema.array(),
 })
