@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Squats",
+    "sets": [
+      {
+        "reps": 40,
+        "weight": "bodyweight"
+      },
+      {
+        "reps": 40,
+        "weight": "bodyweight"
+      },
+      {
+        "reps": 20,
+        "weight": "bodyweight"
+      }
+    ]
+  }
+]
