@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git ls-tree:*)",
-      "WebSearch"
+      "WebSearch",
+      "mcp__miro__board_list_items"
     ]
   }
 }
