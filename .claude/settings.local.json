@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git ls-tree:*)",
       "WebSearch",
-      "mcp__miro__board_list_items"
+      "mcp__miro__board_list_items",
+      "WebFetch(domain:zod.dev)",
+      "Edit(file:/home/leon/.claude/**)",
+      "Write(file:/home/leon/.claude/**)"
     ]
   }
 }
