@@ -6,9 +6,10 @@ The onboarding flow covers everything from an athlete registering an account thr
 
 ```
 [Register Page] → RegisterAthlete → AthleteRegistered
-[Goal Setting Page] → SubmitGoals → GoalsSubmitted → [AI Automation] → ConfirmGoals → GoalsConfirmed
-[Injury Form] → SubmitInjuries → InjuriesSubmitted → [AI Automation] → ConfirmInjuries → InjuriesConfirmed
-[Automation: both confirmed] → OnboardingCompleted
+[Goals Page]    → SubmitGoals + AddExperienceLevel → GoalsSubmitted + ExperienceLevelAdded
+                → [AI Automation] → ConfirmGoals → GoalsConfirmed
+[Injury Form]   → SubmitInjuries → InjuriesSubmitted → [AI Automation] → ConfirmInjuries → InjuriesConfirmed
+[Automation: GoalsConfirmed + InjuriesConfirmed + ExperienceLevelAdded] → OnboardingCompleted
 ```
 
 ---
@@ -51,6 +52,7 @@ Owns all training-related information about an athlete. Keyed by `accountId`.
 Events:
 - `GoalsSubmitted`
 - `GoalsConfirmed`
+- `ExperienceLevelAdded`
 - `InjuriesSubmitted`
 - `InjuriesConfirmed`
 - `OnboardingCompleted`
@@ -95,12 +97,25 @@ Aggregate: `AthleteProfile`
   accountId: string
   goals: string            // original free text input
   summarisedGoals: {
-    primaryGoal: string    // e.g. "build muscle", "lose fat", "improve fitness"
+    description: string    // e.g. "build muscle", "improve cardiovascular fitness"
     targetAreas: string[]  // muscle groups or body areas
-    experienceLevel: string
-    summary: string        // human-readable paragraph
-  }
+    priority: 1 | 2 | 3 | 4 | 5  // 1 = lowest, 5 = highest
+  }[]
+  summary: string          // human-readable paragraph covering overall training direction
   confirmedAt: string
+}
+```
+
+---
+
+### `ExperienceLevelAdded`
+Aggregate: `AthleteProfile`
+
+```ts
+{
+  accountId: string
+  experienceLevel: "beginner" | "intermediate" | "advanced"
+  addedAt: string
 }
 ```
 
@@ -129,7 +144,7 @@ Aggregate: `AthleteProfile`
   summarisedInjuries: {
     affectedAreas: string[]
     restrictions: string[] // movements to avoid
-    severity: string       // e.g. "mild", "moderate", "severe"
+    severity: "mild" | "moderate" | "severe"
     summary: string
   }
   confirmedAt: string
@@ -152,18 +167,19 @@ Aggregate: `AthleteProfile`
 
 ## AI Automations
 
-AI automations react to submitted events and update read models. The AI provider is undecided — the contract defines the output shape and the provider is prompted to produce it.
+AI automations react to submitted events and update read models. Google Gemini (`@google/genai`) is used via `runtimeConfig.geminiApiKey`.
 
 ### Goals Summarisation
 - **Trigger:** `GoalsSubmitted`
 - **Reads:** `goals` free text
-- **Produces:** `GoalsSummary` read model (see projections)
-- **Output shape:** `{ primaryGoal, targetAreas, experienceLevel, summary }`
+- **Produces:** structured goals for `GoalsSummary` read model
+- **Output shape:** `{ description, targetAreas, priority }[]` plus top-level `summary`
+- Constraints: 1–5 goals, priority 1–5 (non-unique allowed), at least one targetArea per goal
 
 ### Injuries Summarisation
 - **Trigger:** `InjuriesSubmitted`
 - **Reads:** `injuries` free text
-- **Produces:** `InjuriesSummary` read model (see projections)
+- **Produces:** structured injuries for `InjuriesSummary` read model
 - **Output shape:** `{ affectedAreas, restrictions, severity, summary }`
 
 Automations run synchronously within the Nitro server process. Nitro hooks can be introduced to decouple them if AI latency becomes a UX concern.
@@ -197,12 +213,15 @@ Tracks whether an athlete has completed onboarding. Used by the frontend to gate
   [accountId]: {
     goalsConfirmed: boolean
     injuriesConfirmed: boolean
+    experienceLevelAdded: boolean
     onboardingComplete: boolean
   }
 }
 ```
 
-Built from: `GoalsConfirmed`, `InjuriesConfirmed`, `OnboardingCompleted`
+Built from: `GoalsConfirmed`, `InjuriesConfirmed`, `ExperienceLevelAdded`, `OnboardingCompleted`
+
+`OnboardingCompleted` fires when all three prerequisites are met: `GoalsConfirmed`, `InjuriesConfirmed`, and `ExperienceLevelAdded`.
 
 ---
 
@@ -214,11 +233,11 @@ Read model produced by the AI goals automation. Displayed on the goals review sc
   [accountId]: {
     goals: string
     summarisedGoals: {
-      primaryGoal: string
+      description: string
       targetAreas: string[]
-      experienceLevel: string
-      summary: string
-    }
+      priority: 1 | 2 | 3 | 4 | 5
+    }[]
+    summary: string
     status: "pending" | "confirmed"
   }
 }
@@ -238,7 +257,7 @@ Read model produced by the AI injuries automation. Displayed on the injuries rev
     summarisedInjuries: {
       affectedAreas: string[]
       restrictions: string[]
-      severity: string
+      severity: "mild" | "moderate" | "severe"
       summary: string
     }
     status: "pending" | "confirmed"
@@ -258,16 +277,17 @@ The complete coaching context for an athlete, used by the plan generation flow. 
   [accountId]: {
     firstName: string
     lastName: string
+    experienceLevel: "beginner" | "intermediate" | "advanced"
     summarisedGoals: {
-      primaryGoal: string
+      description: string
       targetAreas: string[]
-      experienceLevel: string
-      summary: string
-    }
+      priority: 1 | 2 | 3 | 4 | 5
+    }[]
+    summary: string
     summarisedInjuries: {
       affectedAreas: string[]
       restrictions: string[]
-      severity: string
+      severity: "mild" | "moderate" | "severe"
       summary: string
     }
     onboardingComplete: boolean
@@ -275,4 +295,4 @@ The complete coaching context for an athlete, used by the plan generation flow. 
 }
 ```
 
-Built from: `AthleteRegistered`, `GoalsConfirmed`, `InjuriesConfirmed`, `OnboardingCompleted`
+Built from: `AthleteRegistered`, `ExperienceLevelAdded`, `GoalsConfirmed`, `InjuriesConfirmed`, `OnboardingCompleted`

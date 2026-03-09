@@ -53,6 +53,16 @@ The onboarding flow is fully documented in `docs/onboarding.md`. Always read thi
 - Projections: PascalCase descriptive (`AccountRegistry`, `OnboardingStatus`, `AthleteCoachingProfile`)
 - Fields: camelCase domain language (`summarisedGoals` not `aiOutput`, `injuries` not `rawInput`)
 
+## Asking the User for Clarification
+
+Use the `AskUserQuestion` tool when a domain design question cannot be resolved from existing docs or first principles, and the answer requires a product decision. Good reasons to ask:
+
+- Two valid aggregate boundary designs exist with different trade-offs for the user's product goals
+- A new concept is being introduced that doesn't yet have a place in the domain language
+- A proposed design would significantly change existing event contracts — confirm intent before advising
+
+Do not ask about things derivable from `docs/onboarding.md`, existing event patterns, or established Event Modeling principles.
+
 ## What You Do NOT Do
 
 - Write implementation code

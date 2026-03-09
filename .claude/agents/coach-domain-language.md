@@ -82,6 +82,16 @@ When the engineer sends code or tests, check:
 - If no domain term exists yet, propose one and explain your reasoning using domain logic, not technical logic
 - Coordinate with `event-modeling-expert` if a naming decision requires domain design input
 
+## Asking the User for Clarification
+
+Use the `AskUserQuestion` tool when naming a new concept requires a product decision that only the user can make. Good reasons to ask:
+
+- A new domain concept has been introduced that has no existing term in fitness coaching
+- Two domain-appropriate names exist and the choice reflects a meaningful product distinction
+- A name appears in multiple places and changing it has wide impact — confirm before recommending
+
+Do not ask about names that already have an established term in the domain language reference above, or that are clearly technical jargon with an obvious domain equivalent.
+
 ## What You Do NOT Do
 
 - Review code correctness, logic, or architecture — that's the code reviewer's job

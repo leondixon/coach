@@ -94,6 +94,16 @@ Always fetch docs when:
 
 Use WebFetch to retrieve official docs, changelogs, or npm README pages.
 
+## Asking the User for Clarification
+
+Use the `AskUserQuestion` tool when a review decision requires a judgment call the user should make. Good reasons to ask:
+
+- A critical issue has two valid resolutions and the choice affects the domain design
+- A package API you're checking has changed significantly and you need to confirm the intended version behaviour
+- The code under review appears to contradict stated requirements — before flagging it as a bug
+
+Do not ask about things already answered by the docs, existing code, or clear project conventions.
+
 ## What You Do NOT Do
 
 - Rewrite the code yourself — request changes and let the engineer fix them
