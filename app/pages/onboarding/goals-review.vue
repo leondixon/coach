@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'onboarding' })
+definePageMeta({ layout: 'minimal', middleware: 'onboarding' })
 
 interface SummarisedGoal {
   description: string

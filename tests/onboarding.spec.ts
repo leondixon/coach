@@ -100,7 +100,7 @@ test.describe('Onboarding', () => {
       // Step 4: AI injury summary is displayed, user confirms
       await expect(page.getByText('Mild lower back pain requiring careful exercise selection.')).toBeVisible()
       await page.getByRole('button', { name: 'Confirm and complete onboarding' }).click()
-      await expect(page).toHaveURL('/')
+      await expect(page).toHaveURL('/home')
     })
   })
 
@@ -194,7 +194,7 @@ test.describe('Onboarding', () => {
       await page.getByLabel('Injuries and limitations').fill('I have mild lower back pain')
       await page.getByRole('button', { name: 'Submit injuries' }).click()
 
-      await expect(page).toHaveURL('/')
+      await expect(page).toHaveURL('/home')
     })
   })
 

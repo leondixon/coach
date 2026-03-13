@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: 'onboarding' })
+definePageMeta({ layout: 'minimal', middleware: 'onboarding' })
 
 interface InjuriesFormData {
   injuries: string
@@ -73,7 +73,7 @@ async function submit() {
     }
 
     if (status === 409) {
-      await navigateTo('/')
+      await navigateTo('/home')
       return
     }
 

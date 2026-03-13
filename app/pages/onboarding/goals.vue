@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: 'onboarding' })
+definePageMeta({ layout: 'minimal', middleware: 'onboarding' })
 
 interface GoalsFormData {
   goals: string

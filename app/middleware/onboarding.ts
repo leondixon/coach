@@ -1,4 +1,4 @@
-export type OnboardingStatus = {
+export interface OnboardingStatus {
   goalsConfirmed: boolean
   injuriesConfirmed: boolean
   experienceLevelAdded: boolean
@@ -11,13 +11,15 @@ export function resolveOnboardingRedirect(
   isAuthenticated: boolean,
 ): string | undefined {
   if (!isAuthenticated) {
-    if (currentPath === '/register') return undefined
+    if (currentPath === '/register')
+      return undefined
     return '/register'
   }
 
   if (status?.onboardingComplete) {
-    if (currentPath === '/') return undefined
-    return '/'
+    if (currentPath === '/home')
+      return undefined
+    return '/home'
   }
 
   if (currentPath === '/register' || currentPath === '/') {

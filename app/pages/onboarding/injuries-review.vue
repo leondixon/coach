@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: 'onboarding' })
+definePageMeta({ layout: 'minimal', middleware: 'onboarding' })
 
 interface SummarisedInjuries {
   affectedAreas: string[]
@@ -155,7 +155,7 @@ async function confirm() {
 
     // 200: confirmed now; 409: already confirmed — both mean proceed
     if (status === 200 || status === 409) {
-      await navigateTo('/')
+      await navigateTo('/home')
       return
     }
 
