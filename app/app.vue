@@ -1,8 +1,7 @@
 <template>
   <UApp>
-    <UHeader title="Coach" to="/" />
-    <UContainer>
+    <NuxtLayout>
       <NuxtPage />
-    </UContainer>
+    </NuxtLayout>
   </UApp>
 </template>
