@@ -1,13 +1,8 @@
-export interface OnboardingStatusEntry {
+interface OnboardingStatusEntry {
   goalsConfirmed: boolean
   injuriesConfirmed: boolean
   experienceLevelAdded: boolean
   onboardingComplete: boolean
-}
-
-interface OnboardingStatusDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  getOnboardingStatus: (accountId: string) => Promise<OnboardingStatusEntry | undefined>
 }
 
 const defaultStatus: OnboardingStatusEntry = {
@@ -17,14 +12,15 @@ const defaultStatus: OnboardingStatusEntry = {
   onboardingComplete: false,
 }
 
-export async function handleOnboardingStatus(
-  deps: OnboardingStatusDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
-  const entry = await deps.getOnboardingStatus(accountId)
-  return { status: 200, body: entry ?? defaultStatus }
-}
+  const storage = useStorage('local:')
+  const projection = await storage.getItem('projections/onboarding-status') as Record<string, OnboardingStatusEntry> | null
+  return projection?.[accountId] ?? defaultStatus
+})

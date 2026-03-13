@@ -1,52 +1,62 @@
-export type SummarisedInjury = {
+import { confirmInjuries } from '../../../commands/confirm-injuries'
+import { appendEventAndUpdateProjections } from '../../../utils/append-event-and-update-projections'
+import { loadEvents } from '../../../events/store'
+
+interface SummarisedInjury {
   affectedAreas: string[]
   restrictions: string[]
   severity: 'mild' | 'moderate' | 'severe'
   summary: string
 }
 
-export type InjuriesSummaryEntry = {
+interface InjuriesSummaryEntry {
   injuries: string
   summarisedInjuries?: SummarisedInjury
   status: 'pending' | 'confirmed'
 }
 
-export type ConfirmInjuriesResult = { success: true } | { success: false, error: string }
-
-interface ConfirmInjuriesDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  getInjuriesSummary: (accountId: string) => Promise<InjuriesSummaryEntry | undefined>
-  confirmInjuries: (input: unknown) => Promise<ConfirmInjuriesResult>
-}
-
-export async function handleConfirmInjuries(
-  deps: ConfirmInjuriesDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
-  const injuriesSummary = await deps.getInjuriesSummary(accountId)
+  const storage = useStorage('local:')
+  const projection = await storage.getItem('projections/injuries-summary') as Record<string, InjuriesSummaryEntry> | null
+  const injuriesSummary = projection?.[accountId]
+
   if (!injuriesSummary) {
-    return { status: 400, body: { error: 'injuries_not_submitted' } }
+    setResponseStatus(event, 400)
+    return { error: 'injuries_not_submitted' }
   }
 
   if (!injuriesSummary.summarisedInjuries) {
-    return { status: 400, body: { error: 'injuries_summary_not_ready' } }
+    setResponseStatus(event, 400)
+    return { error: 'injuries_summary_not_ready' }
   }
 
-  const result = await deps.confirmInjuries({
-    accountId,
-    summarisedInjuries: injuriesSummary.summarisedInjuries,
-  })
+  const result = await confirmInjuries(
+    {
+      accountId,
+      summarisedInjuries: injuriesSummary.summarisedInjuries,
+    },
+    {
+      appendEvent: appendEventAndUpdateProjections,
+      loadEvents,
+      clock: () => new Date().toISOString(),
+    },
+  )
 
   if (!result.success) {
     if (result.error === 'injuries_already_confirmed') {
-      return { status: 409, body: { error: result.error } }
+      setResponseStatus(event, 409)
+      return { error: result.error }
     }
-    return { status: 400, body: { error: result.error } }
+    setResponseStatus(event, 400)
+    return { error: result.error }
   }
 
-  return { status: 200, body: { success: true } }
-}
+  return { success: true }
+})

@@ -4,30 +4,28 @@ interface SummarisedGoal {
   priority: number
 }
 
-export interface GoalsSummaryEntry {
+interface GoalsSummaryEntry {
   goals: string
   summarisedGoals?: SummarisedGoal[]
   summary?: string
   status: 'pending' | 'confirmed'
 }
 
-interface GoalsSummaryDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  getGoalsSummary: (accountId: string) => Promise<GoalsSummaryEntry | undefined>
-}
-
-export async function handleGoalsSummary(
-  deps: GoalsSummaryDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
-  const entry = await deps.getGoalsSummary(accountId)
+  const storage = useStorage('local:')
+  const projection = await storage.getItem('projections/goals-summary') as Record<string, GoalsSummaryEntry> | null
+  const entry = projection?.[accountId]
   if (!entry) {
-    return { status: 404, body: { error: 'not_found' } }
+    setResponseStatus(event, 404)
+    return { error: 'not_found' }
   }
 
-  return { status: 200, body: entry }
-}
+  return entry
+})

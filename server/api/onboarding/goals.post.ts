@@ -1,38 +1,45 @@
 import { z } from 'zod'
+import { submitGoals } from '../../commands/submit-goals'
+import { appendEventAndUpdateProjections } from '../../utils/append-event-and-update-projections'
+import { loadEvents } from '../../events/store'
 
 const SubmitGoalsBodySchema = z.object({
   goals: z.string().min(1),
+  experienceLevel: z.enum(['beginner', 'intermediate', 'advanced']),
 })
 
-export type SubmitGoalsResult = { success: true } | { success: false, error: string }
-
-interface SubmitGoalsDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  submitGoals: (input: unknown) => Promise<SubmitGoalsResult>
-}
-
-export async function handleSubmitGoals(
-  body: unknown,
-  deps: SubmitGoalsDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
+  const body = await readBody(event)
   const validation = SubmitGoalsBodySchema.safeParse(body)
   if (!validation.success) {
-    return { status: 422, body: { error: 'goals_required' } }
+    setResponseStatus(event, 422)
+    return { error: 'goals_required' }
   }
 
-  const result = await deps.submitGoals({ ...validation.data, accountId })
+  const result = await submitGoals(
+    { ...validation.data, accountId },
+    {
+      appendEvent: appendEventAndUpdateProjections,
+      loadEvents,
+      clock: () => new Date().toISOString(),
+    },
+  )
 
   if (!result.success) {
     if (result.error === 'goals_already_confirmed') {
-      return { status: 409, body: { error: result.error } }
+      setResponseStatus(event, 409)
+      return { error: result.error }
     }
-    return { status: 400, body: { error: result.error } }
+    setResponseStatus(event, 400)
+    return { error: result.error }
   }
 
-  return { status: 200, body: { success: true } }
-}
+  return { success: true }
+})

@@ -1,38 +1,44 @@
 import { z } from 'zod'
+import { submitInjuries } from '../../commands/submit-injuries'
+import { appendEventAndUpdateProjections } from '../../utils/append-event-and-update-projections'
+import { loadEvents } from '../../events/store'
 
 const SubmitInjuriesBodySchema = z.object({
   injuries: z.string().min(1),
 })
 
-export type SubmitInjuriesResult = { success: true } | { success: false, error: string }
-
-interface SubmitInjuriesDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  submitInjuries: (input: unknown) => Promise<SubmitInjuriesResult>
-}
-
-export async function handleSubmitInjuries(
-  body: unknown,
-  deps: SubmitInjuriesDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
+  const body = await readBody(event)
   const validation = SubmitInjuriesBodySchema.safeParse(body)
   if (!validation.success) {
-    return { status: 422, body: { error: 'injuries_required' } }
+    setResponseStatus(event, 422)
+    return { error: 'injuries_required' }
   }
 
-  const result = await deps.submitInjuries({ ...validation.data, accountId })
+  const result = await submitInjuries(
+    { ...validation.data, accountId },
+    {
+      appendEvent: appendEventAndUpdateProjections,
+      loadEvents,
+      clock: () => new Date().toISOString(),
+    },
+  )
 
   if (!result.success) {
     if (result.error === 'injuries_already_confirmed') {
-      return { status: 409, body: { error: result.error } }
+      setResponseStatus(event, 409)
+      return { error: result.error }
     }
-    return { status: 400, body: { error: result.error } }
+    setResponseStatus(event, 400)
+    return { error: result.error }
   }
 
-  return { status: 200, body: { success: true } }
-}
+  return { success: true }
+})

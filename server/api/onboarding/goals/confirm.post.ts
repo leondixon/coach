@@ -1,53 +1,63 @@
-export type SummarisedGoal = {
+import { confirmGoals } from '../../../commands/confirm-goals'
+import { appendEventAndUpdateProjections } from '../../../utils/append-event-and-update-projections'
+import { loadEvents } from '../../../events/store'
+
+interface SummarisedGoal {
   description: string
   targetAreas: string[]
   priority: 1 | 2 | 3 | 4 | 5
 }
 
-export type GoalsSummaryEntry = {
+interface GoalsSummaryEntry {
   goals: string
   summarisedGoals?: SummarisedGoal[]
   summary?: string
   status: 'pending' | 'confirmed'
 }
 
-export type ConfirmGoalsResult = { success: true } | { success: false, error: string }
-
-interface ConfirmGoalsDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  getGoalsSummary: (accountId: string) => Promise<GoalsSummaryEntry | undefined>
-  confirmGoals: (input: unknown) => Promise<ConfirmGoalsResult>
-}
-
-export async function handleConfirmGoals(
-  deps: ConfirmGoalsDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
-  const goalsSummary = await deps.getGoalsSummary(accountId)
+  const storage = useStorage('local:')
+  const projection = await storage.getItem('projections/goals-summary') as Record<string, GoalsSummaryEntry> | null
+  const goalsSummary = projection?.[accountId]
+
   if (!goalsSummary) {
-    return { status: 400, body: { error: 'goals_not_submitted' } }
+    setResponseStatus(event, 400)
+    return { error: 'goals_not_submitted' }
   }
 
   if (!goalsSummary.summarisedGoals || !goalsSummary.summary) {
-    return { status: 400, body: { error: 'goals_summary_not_ready' } }
+    setResponseStatus(event, 400)
+    return { error: 'goals_summary_not_ready' }
   }
 
-  const result = await deps.confirmGoals({
-    accountId,
-    summarisedGoals: goalsSummary.summarisedGoals,
-    summary: goalsSummary.summary,
-  })
+  const result = await confirmGoals(
+    {
+      accountId,
+      summarisedGoals: goalsSummary.summarisedGoals,
+      summary: goalsSummary.summary,
+    },
+    {
+      appendEvent: appendEventAndUpdateProjections,
+      loadEvents,
+      clock: () => new Date().toISOString(),
+    },
+  )
 
   if (!result.success) {
     if (result.error === 'goals_already_confirmed') {
-      return { status: 409, body: { error: result.error } }
+      setResponseStatus(event, 409)
+      return { error: result.error }
     }
-    return { status: 400, body: { error: result.error } }
+    setResponseStatus(event, 400)
+    return { error: result.error }
   }
 
-  return { status: 200, body: { success: true } }
-}
+  return { success: true }
+})

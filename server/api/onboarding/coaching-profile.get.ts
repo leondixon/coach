@@ -11,7 +11,7 @@ interface SummarisedInjuries {
   summary: string
 }
 
-export interface AthleteCoachingProfileEntry {
+interface AthleteCoachingProfileEntry {
   firstName: string | undefined
   lastName: string | undefined
   experienceLevel: 'beginner' | 'intermediate' | 'advanced' | undefined
@@ -21,23 +21,21 @@ export interface AthleteCoachingProfileEntry {
   onboardingComplete: boolean
 }
 
-interface CoachingProfileDeps {
-  getAuthenticatedAccountId: () => Promise<string | undefined>
-  getCoachingProfile: (accountId: string) => Promise<AthleteCoachingProfileEntry | undefined>
-}
-
-export async function handleCoachingProfile(
-  deps: CoachingProfileDeps,
-): Promise<{ status: number, body: Record<string, unknown> }> {
-  const accountId = await deps.getAuthenticatedAccountId()
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event)
+  const accountId = (session.user as { accountId?: string } | undefined)?.accountId
   if (!accountId) {
-    return { status: 401, body: { error: 'unauthenticated' } }
+    setResponseStatus(event, 401)
+    return { error: 'unauthenticated' }
   }
 
-  const entry = await deps.getCoachingProfile(accountId)
+  const storage = useStorage('local:')
+  const projection = await storage.getItem('projections/athlete-coaching-profile') as Record<string, AthleteCoachingProfileEntry> | null
+  const entry = projection?.[accountId]
   if (!entry) {
-    return { status: 404, body: { error: 'not_found' } }
+    setResponseStatus(event, 404)
+    return { error: 'not_found' }
   }
 
-  return { status: 200, body: entry }
-}
+  return entry
+})
