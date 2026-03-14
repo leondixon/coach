@@ -2,14 +2,11 @@ import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
 import type { Coach } from './coach'
 import {
-  SummarisedGoalSchema,
+  GoalsConfirmedSchema,
   SummarisedInjuriesSchema,
 } from '../events/athlete-profile'
 
-const goalsResponseSchema = z.object({
-  summarisedGoals: z.array(SummarisedGoalSchema).min(1).max(5),
-  summary: z.string().min(1),
-})
+const goalsResponseSchema = GoalsConfirmedSchema.pick({ summarisedGoals: true, summary: true })
 
 const injuriesResponseSchema = SummarisedInjuriesSchema
 
