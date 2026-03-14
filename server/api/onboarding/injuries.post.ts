@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { submitInjuries } from '../../commands/submit-injuries'
+import { summariseInjuries } from '../../automations/summarise-injuries'
+import { useCoach } from '../../ai'
 import { appendEventAndUpdateProjections } from '../../utils/append-event-and-update-projections'
 import { loadEvents } from '../../events/store'
 
@@ -39,6 +41,14 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 400)
     return { error: result.error }
   }
+
+  const coach = useCoach()
+  summariseInjuries(accountId, {
+    coachSummarisesInjuries: coach.summariseInjuries,
+    loadEvents,
+    appendEvent: appendEventAndUpdateProjections,
+    clock: () => new Date().toISOString(),
+  }).catch(() => {})
 
   return { success: true }
 })
