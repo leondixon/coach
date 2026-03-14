@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { submitGoals } from '../../commands/submit-goals'
+import { summariseGoals } from '../../automations/summarise-goals'
+import { useCoach } from '../../ai'
 import { appendEventAndUpdateProjections } from '../../utils/append-event-and-update-projections'
 import { loadEvents } from '../../events/store'
 
@@ -40,6 +42,14 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 400)
     return { error: result.error }
   }
+
+  const coach = useCoach()
+  summariseGoals(accountId, {
+    coachSummarisesGoals: coach.summariseGoals,
+    loadEvents,
+    appendEvent: appendEventAndUpdateProjections,
+    clock: () => new Date().toISOString(),
+  }).catch(() => {})
 
   return { success: true }
 })
