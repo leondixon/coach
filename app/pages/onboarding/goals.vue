@@ -1,44 +1,3 @@
-<template>
-  <div class="max-w-2xl mx-auto mt-12">
-    <div class="mb-8">
-      <h1 class="text-3xl font-semibold mb-2">What are your fitness goals?</h1>
-      <p class="text-gray-500">Describe what you want to achieve. Our AI coach will help structure your training plan around your goals.</p>
-    </div>
-
-    <UCard>
-      <form class="space-y-6" @submit.prevent="submit">
-        <UFormField label="Your goals" required>
-          <UTextarea
-            v-model="formData.goals"
-            placeholder="e.g. I want to build muscle, improve my posture, and run a 5K by the end of the year..."
-            :rows="5"
-            :disabled="isSubmitting"
-          />
-        </UFormField>
-
-        <UFormField label="Experience level" required>
-          <USelect
-            v-model="formData.experienceLevel"
-            :items="experienceLevelItems"
-            :disabled="isSubmitting"
-          />
-        </UFormField>
-
-        <UAlert
-          v-if="errorMessage"
-          color="error"
-          :description="errorMessage"
-          icon="i-lucide-alert-circle"
-        />
-
-        <UButton type="submit" block :loading="isSubmitting">
-          Submit goals
-        </UButton>
-      </form>
-    </UCard>
-  </div>
-</template>
-
 <script setup lang="ts">
 definePageMeta({ layout: 'minimal', middleware: 'onboarding' })
 
@@ -56,6 +15,17 @@ const experienceLevelItems = [
 const formData = reactive<GoalsFormData>({
   goals: '',
   experienceLevel: 'beginner',
+})
+
+onMounted(async () => {
+  try {
+    const data = await $fetch<{ goals?: string }>('/api/onboarding/goals-summary')
+    if (data.goals)
+      formData.goals = data.goals
+  }
+  catch {
+    // First visit — no previous goals to load
+  }
 })
 
 const isSubmitting = ref(false)
@@ -102,3 +72,36 @@ async function submit() {
   }
 }
 </script>
+
+<template>
+  <div class="max-w-2xl mx-auto mt-12">
+    <div class="mb-8">
+      <h1 class="text-3xl font-semibold mb-2">
+        What are your fitness goals?
+      </h1>
+      <p class="text-gray-500">
+        Describe what you want to achieve. Our AI coach will help structure your training plan around your goals.
+      </p>
+    </div>
+
+    <UCard>
+      <form class="space-y-6" @submit.prevent="submit">
+        <UFormField label="Your goals" required>
+          <UTextarea v-model="formData.goals"
+            placeholder="e.g. I want to build muscle, improve my posture, and run a 5K by the end of the year..."
+            :rows="5" :disabled="isSubmitting" />
+        </UFormField>
+
+        <UFormField label="Experience level" required>
+          <USelect v-model="formData.experienceLevel" :items="experienceLevelItems" :disabled="isSubmitting" />
+        </UFormField>
+
+        <UAlert v-if="errorMessage" color="error" :description="errorMessage" icon="i-lucide-alert-circle" />
+
+        <UButton type="submit" block :loading="isSubmitting">
+          Submit goals
+        </UButton>
+      </form>
+    </UCard>
+  </div>
+</template>

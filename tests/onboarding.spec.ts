@@ -89,7 +89,7 @@ test.describe('Onboarding', () => {
 
       // Step 2: AI summary is displayed, user confirms
       await expect(page.getByText('Focus on hypertrophy training with progressive overload.')).toBeVisible()
-      await page.getByRole('button', { name: 'These look right — continue to injuries' }).click()
+      await page.getByRole('button', { name: 'Confirm' }).click()
       await expect(page).toHaveURL('/onboarding/injuries')
 
       // Step 3: Submit injuries
@@ -163,6 +163,21 @@ test.describe('Onboarding', () => {
       await page.goto('/onboarding/goals-review')
 
       await expect(page.getByText('Your goals are being processed by our AI coach\u2026')).toBeVisible()
+    })
+  })
+
+  test.describe('Given a user reviewing their goals summary', () => {
+    test('When they click Back, then they return to the goals form', async ({ page }) => {
+      await mockAuthenticatedWithStatus(page, { goalsConfirmed: false, injuriesConfirmed: false, experienceLevelAdded: false, onboardingComplete: false })
+      await page.route('**/api/onboarding/goals-summary', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(goalsSummaryReady) }),
+      )
+
+      await page.goto('/onboarding/goals-review')
+      await expect(page.getByText('Focus on hypertrophy training with progressive overload.')).toBeVisible()
+      await page.getByRole('button', { name: 'Back' }).click()
+
+      await expect(page).toHaveURL('/onboarding/goals')
     })
   })
 
