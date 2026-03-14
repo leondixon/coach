@@ -58,6 +58,16 @@ const formData = reactive<GoalsFormData>({
   experienceLevel: 'beginner',
 })
 
+onMounted(async () => {
+  try {
+    const data = await $fetch<{ goals?: string }>('/api/onboarding/goals-summary')
+    if (data.goals) formData.goals = data.goals
+  }
+  catch {
+    // First visit — no previous goals to load
+  }
+})
+
 const isSubmitting = ref(false)
 const errorMessage = ref<string | undefined>(undefined)
 

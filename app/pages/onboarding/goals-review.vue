@@ -14,6 +14,14 @@ interface GoalsSummaryData {
   status: 'pending' | 'confirmed'
 }
 
+const priorityConfig: Record<number, { label: string, class: string }> = {
+  1: { label: 'Minor focus', class: 'bg-gray-100 text-gray-600' },
+  2: { label: 'Moderate focus', class: 'bg-green-100 text-green-700' },
+  3: { label: 'Regular focus', class: 'bg-green-200 text-green-800' },
+  4: { label: 'Strong focus', class: 'bg-green-400 text-green-900' },
+  5: { label: 'Primary focus', class: 'bg-green-600 text-white' },
+}
+
 const summary = ref<GoalsSummaryData | undefined>(undefined)
 const isPending = ref(true)
 const fetchError = ref(false)
@@ -135,7 +143,7 @@ async function confirm() {
               <p class="font-medium">
                 {{ goal.description }}
               </p>
-              <UBadge :label="`Priority ${goal.priority}`" color="success" />
+              <UBadge :label="priorityConfig[goal.priority].label" color="neutral" :class="priorityConfig[goal.priority].class" />
             </div>
             <div class="flex flex-wrap gap-1 mt-2">
               <UBadge v-for="area in goal.targetAreas" :key="area" :label="area" variant="outline" />
@@ -146,9 +154,14 @@ async function confirm() {
 
       <UAlert v-if="errorMessage" color="error" :description="errorMessage" icon="i-lucide-alert-circle" class="mb-4" />
 
-      <UButton block :loading="isConfirming" @click="confirm">
-        These look right — continue to injuries
-      </UButton>
+      <div class="flex gap-3">
+        <UButton variant="outline" block @click="navigateTo('/onboarding/goals')">
+          Back
+        </UButton>
+        <UButton block :loading="isConfirming" @click="confirm">
+          Confirm
+        </UButton>
+      </div>
     </template>
 
     <!-- Error fetching summary -->
