@@ -14,7 +14,9 @@ interface GoalsSummaryData {
   status: 'pending' | 'confirmed'
 }
 
-const priorityConfig: Record<number, { label: string, class: string }> = {
+type Priority = SummarisedGoal['priority']
+
+const priorityConfig: Record<Priority, { label: string, class: string }> = {
   1: { label: 'Minor focus', class: 'bg-gray-100 text-gray-600' },
   2: { label: 'Moderate focus', class: 'bg-green-100 text-green-700' },
   3: { label: 'Regular focus', class: 'bg-green-200 text-green-800' },
